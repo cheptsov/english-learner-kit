@@ -6,11 +6,12 @@ function spanify(paragraph) {
             if (this.match(/[\s',\.\\-\\+\\*=\\(\\)\\:\\;\\"`]+/)) {
                 ss.push(document.createTextNode(this));
             } else {
-                var span = document.createElement('span');
-                span.className = 'word';
-                span.innerText = this;
-                attachListeners(span);
-                ss.push(span);
+                var span = $('<span>' + this + '</span>').addClass('word');
+                if ($.inArray(this.toString(), favorites) != -1) {
+                    span.addClass('favorite');
+                }
+                attachListeners(span[0]);
+                ss.push(span[0]);
             }
         });
         $(paragraph).replaceWith($(ss));
@@ -33,6 +34,15 @@ function isInsideContentEditor(node) {
     return false;
 }
 
+var favorites = [];
+
+chrome.storage.sync.get('favorites', function(object) {
+    if (object.favorites) {
+        favorites = object.favorites;
+    }
+    console.log(favorites);
+});
+
 $(document).ready(function () {
     setInterval(function () {
         var walker = document.createTreeWalker(
@@ -46,7 +56,7 @@ $(document).ready(function () {
         var textNodes = [];
         while (node = walker.nextNode()) {
             if (node.textContent.length > 0 && !node.textContent.match(/^[\s'’,\.\\-\\+\\*=\\(\\)\\:\\;\\"`]+$/) &&
-                (node.parentNode.tagName !== 'SPAN' || node.parentNode.className !== "word") &&
+                (node.parentNode.tagName !== 'SPAN' || !$(node.parentNode).hasClass('word')) &&
                     node.parentNode.tagName !== 'STYLE' && node.parentNode.tagName !== 'SCRIPT' &&
                     node.parentNode.tagName !== 'TEXTAREA' &&
                     node.parentNode.tagName !== 'INPUT' &&
@@ -70,14 +80,34 @@ function attachListeners(span) {
         pos = getOffsetRect(this);
         element = $(this);
         timer = setTimeout(function () {
-            if (e.target.tagName == 'SPAN' && pressed) {
-                showPopup();
+            if (e.target.tagName == 'SPAN') {
+                previousSpan = currentSpan;
+                currentSpan = span;
+                if (pressed) {
+                    showPopup();
+                }
             }
         }, 0);
     }, function (e) {
         clearTimeout(timer);
         timer = null;
         hidePopup();
+    });
+    $(span).click(function(e) {
+        if (e.target.tagName == 'SPAN'&& pressed) {
+            var index = $.inArray(element.text(), favorites);
+            if (index == -1) {
+                favorites.push(element.text());
+                element.addClass('favorite');
+            } else {
+                favorites.splice(index, 1);
+                element.removeClass('favorite');
+            }
+            chrome.storage.sync.set({'favorites' : favorites}, function() {
+            });
+            console.log(favorites);
+            e.stopPropagation();
+        }
     });
 }
 
@@ -105,6 +135,8 @@ var pos;
 var element;
 
 var voiceTimer;
+var previousSpan;
+var currentSpan;
 function showPopup() {
     translate(element.text(), 'en', 'ru', function (response) {
         if (response.def && response.def[0] && response.def[0].ts && timer) {
@@ -115,6 +147,7 @@ function showPopup() {
                 .css('top', pos.top - 40 + 20 + $('.tooltip11').height());
             $('.tooltip11').show();
             $('.tooltip11_arrow').show();
+            $(currentSpan).addClass('active');
             clearTimeout(voiceTimer);
             voiceTimer = setTimeout(function () {
                 if (timer && pressed) {
@@ -128,6 +161,9 @@ function showPopup() {
 }
 
 function hidePopup() {
+    if (previousSpan)
+        $(previousSpan).removeClass('active');
+    $(currentSpan).removeClass('active');
     $('.tooltip11').hide();
     $('.tooltip11_arrow').hide();
 }

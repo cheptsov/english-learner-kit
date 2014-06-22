@@ -3,10 +3,11 @@
 
     "name": "English Learner Kit",
     "description": "This extension helps learn phonetic transcription and pronunciation.",
-    "version": "1.0.7",
+    "version": "1.0.8",
 
     "permissions": [
-        "https://dictionary.yandex.net/"
+        "https://dictionary.yandex.net/",
+        "storage"
     ],
     "content_scripts": [
         {

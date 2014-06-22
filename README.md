@@ -9,5 +9,4 @@ To install the extension go to https://chrome.google.com/webstore/detail/english
 
 ## Roadmap
 
-- Add/remove the word to the favorites
-- Show if the word is in favorites
+- Switch to the Collins Dictionary API
