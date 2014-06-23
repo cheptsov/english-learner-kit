@@ -8,7 +8,7 @@ function spanify(paragraph) {
             } else {
                 var span = $('<span>' + this + '</span>').addClass('word');
                 if ($.inArray(this.toString(), favorites) != -1) {
-                    span.addClass('favorite');
+                    span.addClass('favorite11');
                 }
                 attachListeners(span[0]);
                 ss.push(span[0]);
@@ -36,8 +36,8 @@ function isInsideContentEditor(node) {
 
 var favorites = [];
 
-chrome.storage.sync.get('favorites', function(object) {
-    if (object.favorites) {
+getItem('favorites', function (object) {
+    if (object && object.favorites && object.favorites instanceof Array) {
         favorites = object.favorites;
     }
     console.log(favorites);
@@ -57,11 +57,12 @@ $(document).ready(function () {
         while (node = walker.nextNode()) {
             if (node.textContent.length > 0 && !node.textContent.match(/^[\s'’,\.\\-\\+\\*=\\(\\)\\:\\;\\"`]+$/) &&
                 (node.parentNode.tagName !== 'SPAN' || !$(node.parentNode).hasClass('word')) &&
-                    node.parentNode.tagName !== 'STYLE' && node.parentNode.tagName !== 'SCRIPT' &&
-                    node.parentNode.tagName !== 'TEXTAREA' &&
-                    node.parentNode.tagName !== 'INPUT' &&
-                node.parentNode.contentEditable !== "true" &&
-                !isInsideContentEditor(node) &&
+                node.parentNode.tagName !== 'STYLE' && node.parentNode.tagName !== 'SCRIPT' &&
+                node.parentNode.tagName !== 'TEXTAREA' &&
+                node.parentNode.tagName !== 'BUTTON' &&
+                node.parentNode.tagName !== 'PRE' &&
+                node.parentNode.tagName !== 'INPUT' &&
+                node.parentNode.contentEditable !== "true" && !isInsideContentEditor(node) &&
                 getComputedStyle(node.parentNode)['white-space'] !== 'nowrap') {
                 //console.log('Found text node: \'' + node.textContent + '\'');
                 textNodes.push(node);
@@ -93,24 +94,35 @@ function attachListeners(span) {
         timer = null;
         hidePopup();
     });
-    $(span).click(function(e) {
-        if (e.target.tagName == 'SPAN'&& pressed) {
+    $(span).click(function (e) {
+        if (e.target.tagName == 'SPAN' &&
+            e.target.parentNode.tagName != 'A' &&
+            e.target.parentNode.parentNode.tagName != 'A' && pressed) {
+            e.stopPropagation();
+            e.preventDefault();
             var index = $.inArray(element.text(), favorites);
             if (index == -1) {
                 favorites.push(element.text());
-                element.addClass('favorite');
+                element.addClass('favorite11');
             } else {
                 favorites.splice(index, 1);
-                element.removeClass('favorite');
+                element.removeClass('favorite11');
             }
-            chrome.storage.sync.set({'favorites' : favorites}, function() {
-            });
+            setItem('favorites', favorites);
             console.log(favorites);
-            e.stopPropagation();
         }
     });
 }
 
+function setItem(name, data) {
+    chrome.extension.sendMessage({ command: 'setItem', name: name, data: data });
+}
+
+function getItem(name, callback) {
+    chrome.extension.sendMessage({ command: 'getItem', name: name }, function (response) {
+        callback(response);
+    });
+}
 
 function getOffsetRect(elem) {
     var box = elem.getBoundingClientRect();
@@ -147,7 +159,8 @@ function showPopup() {
                 .css('top', pos.top - 40 + 20 + $('.tooltip11').height());
             $('.tooltip11').show();
             $('.tooltip11_arrow').show();
-            $(currentSpan).addClass('active');
+            if (currentSpan.parentNode.tagName != 'A')
+                $(currentSpan).addClass('active11');
             clearTimeout(voiceTimer);
             voiceTimer = setTimeout(function () {
                 if (timer && pressed) {
@@ -162,8 +175,8 @@ function showPopup() {
 
 function hidePopup() {
     if (previousSpan)
-        $(previousSpan).removeClass('active');
-    $(currentSpan).removeClass('active');
+        $(previousSpan).removeClass('active11');
+    $(currentSpan).removeClass('active11');
     $('.tooltip11').hide();
     $('.tooltip11_arrow').hide();
 }

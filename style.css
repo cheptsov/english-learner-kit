@@ -1,10 +1,10 @@
-.word.active {
+.word.active11 {
     cursor: pointer;
     border-bottom: dotted 1px;
     text-decoration: none;
 }
 
-.word.favorite {
+.word.favorite11 {
     border-bottom: dotted 1px orangered;
 }
 
