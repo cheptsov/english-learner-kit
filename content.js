@@ -44,35 +44,41 @@ getItem('favorites', function (object) {
 });
 
 $(document).ready(function () {
-    setInterval(function () {
-        var walker = document.createTreeWalker(
-            document.body,
-            NodeFilter.SHOW_TEXT,
-            null,
-            false
-        );
+    chrome.storage.sync.get("enabled", function(object) {
+        enabled = object && object.enabled;
+        if (enabled) {
+            setInterval(function () {
+                var walker = document.createTreeWalker(
+                    document.body,
+                    NodeFilter.SHOW_TEXT,
+                    null,
+                    false
+                );
 
-        var node;
-        var textNodes = [];
-        while (node = walker.nextNode()) {
-            if (node.textContent.length > 0 && !node.textContent.match(/^[\s'’,\.\\-\\+\\*=\\(\\)\\:\\;\\"`]+$/) &&
-                (node.parentNode.tagName !== 'SPAN' || !$(node.parentNode).hasClass('word')) &&
-                node.parentNode.tagName !== 'STYLE' && node.parentNode.tagName !== 'SCRIPT' &&
-                node.parentNode.tagName !== 'TEXTAREA' &&
-                node.parentNode.tagName !== 'BUTTON' &&
-                node.parentNode.tagName !== 'PRE' &&
-                node.parentNode.tagName !== 'INPUT' &&
-                node.parentNode.contentEditable !== "true" && !isInsideContentEditor(node) &&
-                getComputedStyle(node.parentNode)['white-space'] !== 'nowrap') {
-                //console.log('Found text node: \'' + node.textContent + '\'');
-                textNodes.push(node);
-            }
+                var node;
+                var textNodes = [];
+                while (node = walker.nextNode()) {
+                    if (node.textContent.length > 0 && !node.textContent.match(/^[\s'’,\.\\-\\+\\*=\\(\\)\\:\\;\\"`]+$/) &&
+                        (node.parentNode.tagName !== 'SPAN' || !$(node.parentNode).hasClass('word')) &&
+                        node.parentNode.tagName !== 'STYLE' && node.parentNode.tagName !== 'SCRIPT' &&
+                        node.parentNode.tagName !== 'TEXTAREA' &&
+                        node.parentNode.tagName !== 'BUTTON' &&
+                        node.parentNode.tagName !== 'PRE' &&
+                        node.parentNode.tagName !== 'CODE' &&
+                        node.parentNode.tagName !== 'INPUT' &&
+                        node.parentNode.contentEditable !== "true" && !isInsideContentEditor(node) &&
+                        getComputedStyle(node.parentNode)['white-space'] !== 'nowrap') {
+                        //console.log('Found text node: \'' + node.textContent + '\'');
+                        textNodes.push(node);
+                    }
+                }
+
+                $(textNodes).each(function () {
+                    spanify(this);
+                });
+            }, 2000);
         }
-
-        $(textNodes).each(function () {
-            spanify(this);
-        });
-    }, 2000);
+    });
 });
 
 function attachListeners(span) {
